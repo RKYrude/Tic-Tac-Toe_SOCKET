@@ -1,0 +1,17 @@
+.game-cont {
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;
+
+
+    .tile-cont {
+        margin: 37px auto;
+        display: grid;
+        gap: 5px;
+        align-items: center;
+        grid-template-columns: repeat(3, min-content);
+        grid-template-rows: repeat(3, 104px);
+        width: fit-content;
+    }
+}

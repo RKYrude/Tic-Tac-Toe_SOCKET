@@ -1,0 +1,39 @@
+.home_container {
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    width: min-content;
+
+
+    .homeBG {
+        height: 500px;
+        box-shadow: 15px 14px 4px 3px rgba(255, 189, 161, 1);
+        border-radius: 6px;
+    }
+
+    .butt_start {
+        border: none;
+        height: 42px;
+        position: absolute;
+        border-radius: 6px;
+        left: 50%;
+        top: 59%;
+        transform: translate(-50%);
+        
+        box-shadow: 0px 7px 0px 0px rgba(255, 174, 140, 1);
+        border: 2px solid rgba(255, 174, 140, 1);
+
+        img {
+            border-radius: 6px;
+            height: 38px;
+        }
+
+        &:active {
+            border: 2px solid #ffd2b6;
+            box-shadow: 0px 2px 0px 0px rgba(255, 174, 140, 1);
+            top: 303px;
+        }
+
+    }
+}

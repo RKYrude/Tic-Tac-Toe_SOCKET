@@ -1,0 +1,21 @@
+@import url('https://fonts.googleapis.com/css2?family=M+PLUS+Rounded+1c&family=Varela+Round&display=swap');
+
+.playerTurn-cont {
+    height: max-content;
+    text-align: center;
+    font-family: "Varela Round", sans-serif;
+    font-size: 50px;
+    // text-align: center;
+}
+
+.playerTurn-cont>img {
+    height: 70px;
+    position: relative;
+    top: 10px; 
+    margin-left: 13px;
+}
+
+.playerTurn-cont>span {
+    font-size: 65px;
+    color: #12CDC0;
+}

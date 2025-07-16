@@ -1,0 +1,56 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>TIC - TAC</title>
+    <link rel="stylesheet" href="./tictac.css">
+    <link rel="icon" type="image/x-icon" href="./Assets/FAV_ICO.svg">
+
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Varela+Round&display=swap" rel="stylesheet">
+   
+</head>
+<body>
+    <main>
+        <div class="lobby_container">
+            <img draggable="false" class="lobbyBG" src="./Assets/LOBBY.svg" alt="lobby image">
+            <img draggable="false" class="butt_start" src="./Assets/BUTT_START.svg" alt="">
+        </div>
+
+        <section class="game">
+            <h1>Player <span>1</span> Turn <img draggable="false" src="./Assets/GREEN_INSET_CIRCLE.svg" alt=""></h1>
+            
+            <div class="mask"></div>
+
+            <div class="grids">
+                <img draggable="false" class="box box0" src="./Assets/GREY_GRID_BLOCK.svg" alt="grid">
+                <img draggable="false" class="box box1" src="./Assets/GREY_GRID_BLOCK.svg" alt="grid">
+                <img draggable="false" class="box box2" src="./Assets/GREY_GRID_BLOCK.svg" alt="grid">
+                <img draggable="false" class="box box3" src="./Assets/GREY_GRID_BLOCK.svg" alt="grid">
+                <img draggable="false" class="box box4" src="./Assets/GREY_GRID_BLOCK.svg" alt="grid">
+                <img draggable="false" class="box box5" src="./Assets/GREY_GRID_BLOCK.svg" alt="grid">
+                <img draggable="false" class="box box6" src="./Assets/GREY_GRID_BLOCK.svg" alt="grid">
+                <img draggable="false" class="box box7" src="./Assets/GREY_GRID_BLOCK.svg" alt="grid">
+                <img draggable="false" class="box box8" src="./Assets/GREY_GRID_BLOCK.svg" alt="grid">
+            </div>
+            
+            <div class="butt_cont">
+                <img draggable="false" class="back" src="./Assets/BACK.svg">
+                <img draggable="false" class="restart" src="./Assets/RESTART.svg">
+            </div>
+
+            <div class="win_counter">
+                <h1>WIN COUNTER</h1>
+                <h1><img draggable="false" src="./Assets/GREEN_INSET_CIRCLE.svg"> = <span>0</span></h1>
+                <h1><img draggable="false" src="./Assets/RED_INSET_CROSS.svg"> = <span>0</span></h1>
+                <button onclick="countReset()"><h3>RESET</h3></button>
+            </div>
+
+           
+        </section>
+    </main>
+    <script src="./tictac.js"></script>
+</body>
+</html>
