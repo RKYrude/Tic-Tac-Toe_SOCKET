@@ -26,26 +26,8 @@ const io = new Server(server, {
 
 io.on('connection', (socket) => {
 
-    function handleRoomCreation(roomCode) {
-
-        const existingRoom = rooms.find(r => r.p1 === socket.id || r.p2 === socket.id);
-
-        if (existingRoom) {
-            socket.leave(existingRoom.roomID);
-
-            if (existingRoom.p1 === socket.id) existingRoom.p1 = null;
-            if (existingRoom.p2 === socket.id) existingRoom.p2 = null;
-
-            console.log("Existing ROOM :- ",existingRoom);
-
-            if (!existingRoom.p1 && !existingRoom.p2) {
-                const index = rooms.findIndex(r => r.roomID === existingRoom.roomID);
-                if (index !== -1) rooms.splice(index, 1);
-                console.log(`Room ${existingRoom.roomID} deleted`);
-            }
-        }
-
-
+    function handleRoomCreation(roomData) {
+        const roomCode = roomData.roomCode;
 
         socket.join(roomCode);
         socket.roomCode = roomCode;
@@ -54,7 +36,10 @@ io.on('connection', (socket) => {
             {
                 roomID: roomCode,
                 p1: socket.id,
-                p2: null
+                p2: null,
+                board: Array(9).fill(null),
+                playerTurn: socket.id,
+                moveID: 1,
             }
         )
 
@@ -64,18 +49,20 @@ io.on('connection', (socket) => {
     }
 
     function handleRoomJoin(roomCode) {
-        const room = io.sockets.adapter.rooms.get(roomCode);
-        const numClients = room ? room.size : 0;
+        const socketRoom = io.sockets.adapter.rooms.get(roomCode);
+        const numClients = socketRoom ? socketRoom.size : 0;
+
+        const room = rooms.find(r => r.roomID === roomCode);
 
         //Room Not Found
         if (!room) {
-            socket.emit('roomNotFound', roomCode);
+            socket.emit('roomNotFound', { msg: `ERROR: Room ${roomCode} Not Found!` });
             return;
         }
 
         //Room Full
         if (numClients >= MAX_ROOM_LIMIT) {
-            socket.emit("roomFull", roomCode); //sockeet.on for this is still no added to front end
+            socket.emit("roomFull", { msg: `ERROR: Room ${roomCode} is Full!` }); //sockeet.on for this is still no added to front end
             return;
         }
 
@@ -92,32 +79,46 @@ io.on('connection', (socket) => {
         io.to(roomCode).emit("roomJoined", roomCode, socket.id);
     }
 
-    function handleRoomExit(roomCode) { //Not functional yet as no leave button added
-        socket.to(roomCode).emit("userLeft", socket.id);
+    function handleRoomExit(roomCode) {
+        const existingRoom = rooms.find(r => r.roomID === roomCode);
+
+        console.log(existingRoom);
+
+
+        if (existingRoom) {
+            console.log("handleRoomExit");
+            socket.leave(roomCode);
+
+            if (existingRoom.p1 === socket.id) existingRoom.p1 = null;
+            if (existingRoom.p2 === socket.id) existingRoom.p2 = null;
+
+            // console.log(`${socket.id} Left Room ${roomCode} `);
+
+            if (!existingRoom.p1 && !existingRoom.p2) {
+                const index = rooms.findIndex(r => r.roomID === roomCode);
+
+                if (index !== -1) rooms.splice(index, 1);
+
+                console.log(`Room ${roomCode} deleted`);
+                console.log("\n", rooms);
+
+            } else {
+                socket.to(roomCode).emit("userLeft", { msg: `Player ${socket.id} Left.` });
+                //* Not functional yet as no leave button added and no listener in frontend
+            }
+        }
 
         socket.emit("roomExited", roomCode);
-
-        socket.leave(roomCode);
     }
 
     function handleRoomDisconnect() {
         const roomCode = socket.roomCode;
 
-        // console.log(rooms);
-
-
-        if (!roomCode) {
-            console.log(`no Room Code to disconnect`);
-            return;
-        }
+        if (roomCode == null) return;
 
         const room = rooms.find(r => r.roomID === roomCode);
-        if (!room) {
-            console.log(`no ${roomCode} room available`)
-            return;
-        }
 
-        io.to(roomCode).emit('userLeft', socket.id);
+        io.to(roomCode).emit('userDisconnected', socket.id);
 
         console.log(`user ${socket.id} left room ${roomCode}`);
 
@@ -133,7 +134,6 @@ io.on('connection', (socket) => {
         }
 
         console.log(rooms);
-        
     }
 
     function handleDataRequest(data) {
@@ -141,10 +141,63 @@ io.on('connection', (socket) => {
 
         const room = rooms.find(r => r.roomID === data.roomCode);
 
-        console.log('handleRoomJoinedataRequest --- room', room);
+        console.log('\n\nhandleRoomJoinedataRequest --- room', room);
 
         io.to(data.roomCode).emit('responseData', room);
     }
+
+    function handlePlayerMove(updatedRoomData) {
+        
+        let room = rooms.find(r => r.roomID === updatedRoomData.roomCode);
+        
+        if (!room) return; // Room not found
+        
+        console.log("inside handlePlayerMove");
+
+        const playerID = socket.id; // The player making the move
+        const isPlayer1 = playerID === room.p1;
+        const isPlayer2 = playerID === room.p2;
+
+        // 1️⃣ Validate turn based on playerTurn
+        if (room.playerTurn !== playerID) {
+            console.log("Invalid turn - not your turn!");
+            return;
+        }
+
+        // 2️⃣ Validate moveID parity
+        const shouldBeP1Turn = room.moveID % 2 !== 0;
+        if (shouldBeP1Turn && !isPlayer1) {
+            console.log("Invalid move - it's Player 1's turn!");
+            return;
+        }
+        if (!shouldBeP1Turn && !isPlayer2) {
+            console.log("Invalid move - it's Player 2's turn!");
+            return;
+        }
+
+        // 3️⃣ Apply board changes (from client move)
+        room.board = updatedRoomData.board;
+
+        // 4️⃣ Increment moveID and switch turn
+        room.moveID += 1;
+        room.playerTurn = isPlayer1 ? room.p2 : room.p1;
+
+        // 5️⃣ Broadcast updated state to both players
+        io.to(room.roomID).emit("roomDataUpdated", 
+            {
+                roomCode: room.roomID,
+                p1: room.p1,
+                p2: room.p2,
+                board: room.board,
+                playerTurn: room.playerTurn,
+                moveID: room.moveID,
+            }
+        );
+
+        // console.log(`Move accepted. Next turn: ${room.playerTurn}`);
+
+    }
+
 
 
 
@@ -155,6 +208,13 @@ io.on('connection', (socket) => {
     socket.on("disconnect", handleRoomDisconnect);
 
     socket.on("requestData", handleDataRequest);
+
+    socket.on("playerMove", handlePlayerMove);
+
+
+
+
+    socket.on("test", () => { console.log('Test') });
 
 });
 

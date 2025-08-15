@@ -7,25 +7,30 @@ function Waiting() {
 
     const [roomData, setRoomData] = useState(JSON.parse(sessionStorage.getItem("roomData")));
     const [hideRoomCode, setHideRoomCode] = useState(true)
-    const [countdown, setCountdown] = useState(null); // null = not started
-
+    const [countdown, setCountdown] = useState(null); //* null = not started
 
     const navigate = useNavigate();
 
 
     useEffect(() => {
-        if (roomData?.p1 && roomData?.p2 && countdown === null) {
-            setCountdown(5); // start countdown from 5 seconds
+        if (!roomData) {
+            navigate("/lobby");
         }
-
-
     }, [roomData]);
+
+
+    useEffect(() => {
+        if (roomData?.p1 && roomData?.p2 && countdown === null) {
+            setCountdown(1);
+        }
+    }, [roomData]);
+
 
     useEffect(() => {
         if (countdown === null) return;
 
         if (countdown === 0) {
-            
+
             navigate('/game');
             return;
         }
@@ -34,20 +39,8 @@ function Waiting() {
             setCountdown((prev) => prev - 1);
         }, 1000);
 
-        return () => clearInterval(interval); // cleanup
+        return () => clearInterval(interval); //* cleanup
     }, [countdown]);
-
-
-    useEffect(() => {
-        const wasDisconnected = sessionStorage.getItem('wasDisconnected');
-
-        if (!wasDisconnected) {
-            navigate("/lobby");
-        }
-
-    }, []);
-
-
 
 
     useEffect(() => {
@@ -63,48 +56,57 @@ function Waiting() {
         }
 
         function handleUserDisconnect(socketID) {
-            console.log(`${socketID} disconnected`);
+            let updatedRoomData;
 
-            if (socket.id === socketID) {
-                sessionStorage.removeItem("wasDisconnected");
-                navigate("/lobby");
+            console.log(`${socketID} Disconnected`);
+
+            if (roomData.p1 === socket.id) {
+
+                updatedRoomData = {
+                    ...roomData,
+                    p2: null,
+                }
+            } else {
+                updatedRoomData = {
+                    ...roomData,
+                    p1: null,
+                }
             }
-            else {
-                socket.emit("requestData", { info: "Player List", roomCode: roomData.roomCode });
-                setCountdown(null);
-            }
+
+            setRoomData(updatedRoomData);
+
+            sessionStorage.setItem("roomData", JSON.stringify(updatedRoomData));
+
+            setCountdown(null);
         }
 
-        function handleresponseData(room) {            
+        function handleresponseData(room) {
             sessionStorage.setItem("roomData", JSON.stringify({
                 roomCode: room.roomID,
                 p1: room.p1,
-                p2: room.p2
+                p2: room.p2,
+                board: room.board,
+                playerTurn: room.p1,
+                moveID: room.moveID,
             }));
 
             setRoomData(JSON.parse(sessionStorage.getItem("roomData")));
         }
 
-        function handleBeforeUnload() {
-            sessionStorage.removeItem("wasDisconnected");
-            console.log("Disconnected");
-            navigate('/lobby');
-        }
-
         socket.on("roomJoined", handleRoomJoin);
         socket.on('roomExited', handleRoomExit);
-        socket.on("userLeft", handleUserDisconnect);
+        socket.on("userDisconnected", handleUserDisconnect);
         socket.on("responseData", handleresponseData);
-        window.addEventListener("beforeunload", handleBeforeUnload);
 
         return () => { //dosent run immediatetly...Runs when the componented is unmounted or rerendered
             socket.off("roomJoined", handleRoomJoin);
             socket.off('roomExited', handleRoomExit);
-            socket.off("userLeft", handleUserDisconnect);
+            socket.off("userDisconnected", handleUserDisconnect);
             socket.off("responseData", handleresponseData);
-            window.addEventListener("beforeunload", handleBeforeUnload);
         }
     }, []);
+
+
 
     function copyText() {
         const text = roomData.roomCode || roomData.roomID;
@@ -150,8 +152,8 @@ function Waiting() {
             <section className='bottom'>
                 <h3>Connected Players</h3>
                 <div className="connectedPlayers">
-                    <p>{roomData.p1 == socket.id ? `${roomData.p1} (you)` : roomData.p1 || 'Waiting . . .'}</p>
-                    <p>{roomData.p2 == socket.id ? `${roomData.p2} (you)` : roomData.p2 || 'Waiting . . .'}</p>
+                    <p>{roomData?.p1 == socket.id ? `${roomData?.p1} (you)` : roomData.p1 || 'Waiting . . .'}</p>
+                    <p>{roomData?.p2 == socket.id ? `${roomData?.p2} (you)` : roomData.p2 || 'Waiting . . .'}</p>
                 </div>
 
                 {countdown !== null && (

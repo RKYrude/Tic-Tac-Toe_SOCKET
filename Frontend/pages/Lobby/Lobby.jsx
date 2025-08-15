@@ -3,8 +3,7 @@ import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import socket from '../../src/utils/socket';
 
-
-function Lobby() {
+function Lobby() {    
 
     const [inputValue, setInputValue] = useState('')
 
@@ -25,42 +24,40 @@ function Lobby() {
             console.log(`connected with socket id ${socket.id}`);
         }
 
-        function handleDisconnection() {
-            sessionStorage.removeItem("roomData");
-            console.log("Disconnected");
-        }
+        // function handleDisconnection() {
+        //     sessionStorage.removeItem("roomData");
+        //     console.log("Disconnected");
+        // }
 
         function handleRoomExit(roomCode) {
             console.log(`Exited Room ${roomCode}`);
         }
 
-        function handleRoomNotFound(roomCode) {
-            console.log(`No room with the Room code ${roomCode}`);
+        function handleRoomNotFound({msg}) {
+            console.log(msg);
         }
 
-        function handleRoomFull(roomCode) {
-            console.log(`The room ${roomCode} is FULL`);
+        function handleRoomFull({msg}) {
+            console.log(msg);
         }
 
-        function handleBeforeUnload() {
-            sessionStorage.removeItem("roomData");
-            console.log("Disconnected");
-        }
+        // function handleBeforeUnload() {
+        //     sessionStorage.removeItem("roomData");
+        //     console.log("Disconnected");
+        // }
 
         socket.on("connect", handleConnection);
-        socket.on("disconnect", handleDisconnection);
-        socket.on('roomExited', handleRoomExit); // Move this to waiting.jsx and game.jsx
+        socket.on('roomExited', handleRoomExit); //* Move this to waiting.jsx and game.jsx
         socket.on("roomNotFound", handleRoomNotFound);
         socket.on("roomFull", handleRoomFull);
-        window.addEventListener("beforeunload", handleBeforeUnload);
+        // window.addEventListener("beforeunload", handleBeforeUnload);
 
         return () => { // * dosent run immediatetly...Runs when the componented is unmounted or rerendered
             socket.off("connect", handleConnection);
-            socket.off("disconnect", handleDisconnection);
             socket.off('roomExited', handleRoomExit);
             socket.off("roomNotFound", handleRoomNotFound);
             socket.off("roomFull", handleRoomFull);
-            window.removeEventListener("beforeunload", handleBeforeUnload);
+            // window.removeEventListener("beforeunload", handleBeforeUnload);
 
         }
     }, []);
@@ -70,22 +67,26 @@ function Lobby() {
         const storedRoomData = JSON.parse(sessionStorage.getItem('roomData'));
 
         const finalizeRoomCreation = () => {
-            socket.emit("createRoom", createRoomID);
-
+            
             const roomData = {
                 roomCode: createRoomID,
                 p1: socket.id,
                 p2: null,
+                board: Array(9).fill(null),
+                playerTurn: socket.id,
+                moveID: 1,
             }
 
+            socket.emit("createRoom", roomData);
+
             sessionStorage.setItem("roomData", JSON.stringify(roomData));
-            sessionStorage.setItem("wasDisconnected", "false");
+            // sessionStorage.setItem("wasDisconnected", "false");
 
             navigate("/waiting");
         };
 
         if (storedRoomData) { // * In a Room
-            socket.once("roomExited", finalizeRoomCreation);
+            socket.once("roomExited", finalizeRoomCreation);           
             socket.emit("exitRoom", storedRoomData.roomCode);
         } else {
             finalizeRoomCreation();
@@ -93,7 +94,7 @@ function Lobby() {
     }
 
     function handleRoomJoining() {
-        const storedRoomData = sessionStorage.getItem('roomData');
+        const storedRoomData = JSON.parse(sessionStorage.getItem('roomData'));
 
         const joinLogic = () => {
             socket.emit("joinRoom", inputValue);
@@ -104,12 +105,13 @@ function Lobby() {
                     roomCode: data.roomID,
                     p1: data.p1,
                     p2: data.p2,
+                    board: Array(9).fill(null),
+                    playerTurn: data.p1,
                 }
 
                 sessionStorage.setItem("roomData", JSON.stringify(roomData));
-                sessionStorage.setItem("wasDisconnected", "false");
 
-                console.log('setSessionData');
+                console.log(`Joined room ${data.roomID}`);
 
                 navigate('/waiting');
             });
@@ -118,8 +120,10 @@ function Lobby() {
         };
 
         if (storedRoomData) {
-            socket.once("roomExited", joinLogic);
+            socket.once("roomExited", joinLogic);            
             socket.emit("exitRoom", storedRoomData.roomCode);
+            console.log(storedRoomData.roomCode);
+            
         } else {
             joinLogic();
         }
@@ -128,6 +132,8 @@ function Lobby() {
     return (
         <div className="lobby_container">
             <h1>JOIN GAME</h1>
+
+            <p>{socket.id}</p>
 
             <h3>Enter Room Code</h3>
 

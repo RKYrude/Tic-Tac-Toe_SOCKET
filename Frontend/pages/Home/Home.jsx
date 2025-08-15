@@ -9,7 +9,7 @@ function Lobby() {
         let audio = new Audio('../../src/assets/sounds/clear-mouse-clicks.wav');
         audio.playbackRate = 1.9;
         audio.play();
-        setTimeout(() => {  //game starts after full sound is played
+        setTimeout(() => {  //*game starts after full sound is played
             navigate('/lobby')
         }, 180);
     }
